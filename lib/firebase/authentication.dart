@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:passwordmanager/utils.dart';
 
 class Authentication {
   late final FirebaseAuth _firebaseAuth;
@@ -78,15 +79,13 @@ class Authentication {
       userCredential = await _firebaseAuth.signInWithEmailAndPassword(
           email: email, password: password);
     } on FirebaseAuthException catch (e) {
-      if (e.code == 'weak-password') {
-        error = 'The password provided is too weak.';
-      } else if (e.code == 'email-already-in-use') {
-        error = 'The account already exists for that email.';
+      if (e.code == 'user-not-found') {
+        error = 'No user found for that email.';
+      } else if (e.code == 'wrong-password') {
+        error = 'Wrong password provided for that user.';
       } else {
         error = e.message;
       }
-    } catch (e) {
-      error = e.toString();
     }
     return AuthenticationResult(userCredential: userCredential, error: error);
   }
@@ -101,6 +100,31 @@ class Authentication {
     if (isEmailVerified()) {
       User? user = _firebaseAuth.currentUser;
       await sendEmailVerification(user);
+    }
+  }
+
+  Future<String?> changePassword(
+      String currentPassword, String newPassword) async {
+    final User? user = _firebaseAuth.currentUser;
+    final cred = EmailAuthProvider.credential(
+        email: user?.email ?? "", password: currentPassword);
+
+    try {
+      await user!.reauthenticateWithCredential(cred);
+      await user.updatePassword(newPassword);
+      setMasterPassword(newPassword);
+      return "Password changed successfully!";
+    } on FirebaseAuthException catch (e) {
+      if (e.code == 'user-not-found') {
+        return 'No user found for that email.';
+      }
+      if (e.code == 'wrong-password') {
+        return 'Wrong password provided for that user.';
+      }
+      if (e.code == 'weak-password') {
+        return 'The password provided is too weak.';
+      }
+      return e.message;
     }
   }
 
