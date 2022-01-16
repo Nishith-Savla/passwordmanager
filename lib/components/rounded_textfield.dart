@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:just_the_tooltip/just_the_tooltip.dart';
 import 'package:passwordmanager/components/textfield_container.dart';
-import 'package:passwordmanager/constants.dart';
 
 class RoundedTextFormField extends StatelessWidget {
   final bool disabled;
@@ -22,6 +21,7 @@ class RoundedTextFormField extends StatelessWidget {
   final bool obscureText;
   final FocusNode? focusNode;
   final String tooltipMessage;
+  final BoxConstraints? constraints;
   final JustTheController? tooltipController;
 
   final TextEditingController? controller;
@@ -51,6 +51,7 @@ class RoundedTextFormField extends StatelessWidget {
     this.validator,
     this.initialValue,
     this.controller,
+    this.constraints,
     this.autofocus = false,
     this.obscureText = false,
     this.tooltipMessage = "",
@@ -69,10 +70,12 @@ class RoundedTextFormField extends StatelessWidget {
       horizontalPadding: horizontalPadding,
       verticalPadding: verticalPadding,
       child: TextFormField(
-        onChanged: onChanged,
-        cursorColor: purpleMaterialColor,
-        obscureText: obscureText,
+        autofillHints: autofillHints,
+        autofocus: autofocus,
+        autovalidateMode: autovalidateMode,
+        controller: controller,
         decoration: InputDecoration(
+          constraints: constraints,
           isDense: true,
           icon: tooltipMessage.isNotEmpty && tooltipController != null
               ? JustTheTooltip(
@@ -89,28 +92,28 @@ class RoundedTextFormField extends StatelessWidget {
                   child: InkWell(
                     splashFactory: InkRipple.splashFactory,
                     radius: 5,
-                    child: Icon(icon, size: 20, color: Colors.red),
-                    onTap: () => tooltipController!.showTooltip(),
+                    child: Icon(icon, size: 22, color: Colors.red),
+                    onTap: tooltipController!.showTooltip,
                   ),
                 )
-              : Icon(icon, size: 20, color: purpleMaterialColor),
+              : Icon(icon, size: 22, color: Theme.of(context).iconTheme.color),
           hintText: hintText,
+          hintStyle: Theme.of(context).inputDecorationTheme.hintStyle,
           suffixIcon: suffixIcon,
           labelText: labelText,
+          labelStyle: Theme.of(context).inputDecorationTheme.labelStyle,
           border: InputBorder.none,
         ),
-        autovalidateMode: autovalidateMode,
         focusNode: focusNode,
+        initialValue: initialValue,
         keyboardType: keyboardType,
         maxLength: maxLength,
-        autofillHints: autofillHints,
+        obscureText: obscureText,
+        onChanged: onChanged,
         onSaved: onSaved,
-        validator: validator,
-        autofocus: autofocus,
-        style: style,
         readOnly: disabled,
-        initialValue: initialValue,
-        controller: controller,
+        style: style,
+        validator: validator,
       ),
     );
   }

@@ -1,3 +1,5 @@
+import 'dart:math' show max, min;
+
 import 'package:flutter/material.dart' show Color, MaterialColor;
 
 const emailRegex =
@@ -5,17 +7,39 @@ const emailRegex =
 
 const nameRegex = r"^[^\W\d_]+(?:[-\s](?:[^\W\d_]|['])+)*$";
 
-const purpleMaterialColor = MaterialColor(0xFFA633FF, {
-  50: Color.fromRGBO(166, 51, 255, .1),
-  100: Color.fromRGBO(166, 51, 255, .2),
-  200: Color.fromRGBO(166, 51, 255, .3),
-  300: Color.fromRGBO(166, 51, 255, .4),
-  400: Color.fromRGBO(166, 51, 255, .5),
-  500: Color.fromRGBO(166, 51, 255, .6),
-  600: Color.fromRGBO(166, 51, 255, .7),
-  700: Color.fromRGBO(166, 51, 255, .8),
-  800: Color.fromRGBO(166, 51, 255, .9),
-  900: Color.fromRGBO(166, 51, 255, 1),
-});
+MaterialColor generateMaterialColor(Color color) {
+  return MaterialColor(color.value, {
+    50: tintColor(color, 0.8),
+    100: tintColor(color, 0.6),
+    200: tintColor(color, 0.4),
+    300: tintColor(color, 0.2),
+    400: tintColor(color, 0.1),
+    500: color,
+    600: shadeColor(color, 0.1),
+    700: shadeColor(color, 0.2),
+    800: shadeColor(color, 0.3),
+    900: shadeColor(color, 0.4),
+  });
+}
+
+int tintValue(int value, double factor) =>
+    max(0, min((value + ((255 - value) * factor)).round(), 255));
+
+Color tintColor(Color color, double factor) => Color.fromRGBO(
+    tintValue(color.red, factor),
+    tintValue(color.green, factor),
+    tintValue(color.blue, factor),
+    1);
+
+int shadeValue(int value, double factor) =>
+    max(0, min(value - (value * factor).round(), 255));
+
+Color shadeColor(Color color, double factor) => Color.fromRGBO(
+    shadeValue(color.red, factor),
+    shadeValue(color.green, factor),
+    shadeValue(color.blue, factor),
+    1);
+
+final purpleMaterialColor = generateMaterialColor(const Color(0xFFA633FF));
 
 const Color darkBlueishColor = Color(0xff403b58);

@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:passwordmanager/screens/home.dart';
 import 'package:passwordmanager/utils.dart';
 
 class Authentication {
@@ -21,11 +22,11 @@ class Authentication {
       required String password,
       required String collectionPath,
       Map<String, dynamic>? values}) async {
-    late final AuthenticationResult authResult;
     String? error;
 
-    authResult =
+    final AuthenticationResult authResult =
         await createUserWithEmailAndPassword(email: email, password: password);
+
     if (authResult.error != null && authResult.error!.isNotEmpty) {
       return authResult.error;
     }
@@ -33,20 +34,16 @@ class Authentication {
 
     final data = <String, dynamic>{};
     data['email'] = email;
-    print(authResult.userCredential!.user?.metadata.creationTime);
     data['createdAt'] =
         authResult.userCredential!.user?.metadata.creationTime ??
             FieldValue.serverTimestamp();
     if (values != null) data.addAll(values);
-
-    print("Above add");
 
     await _firebaseFirestore
         .collection(collectionPath)
         .doc(authResult.userCredential!.user!.uid)
         .set({...data}).catchError((e) => error = e);
 
-    print("Above return");
     return error;
   }
 
@@ -97,9 +94,22 @@ class Authentication {
   }
 
   Future<void> verifyCurrentUser() async {
-    if (isEmailVerified()) {
+    if (!isEmailVerified) {
       User? user = _firebaseAuth.currentUser;
+      user!.reload();
       await sendEmailVerification(user);
+    }
+  }
+
+  Future<String?> updateEmail(String email) async {
+    final User? user = _firebaseAuth.currentUser;
+    try {
+      await user?.updateEmail(email);
+      return "Profile updated";
+    } on FirebaseAuthException catch (e) {
+      if (e.code == "email-already-in-use") {
+        return "Email Already In Use";
+      }
     }
   }
 
@@ -112,7 +122,8 @@ class Authentication {
     try {
       await user!.reauthenticateWithCredential(cred);
       await user.updatePassword(newPassword);
-      setMasterPassword(newPassword);
+      await setMasterPassword(newPassword);
+      await repository.updateAllEntriesPasswords(currentPassword, newPassword);
       return "Password changed successfully!";
     } on FirebaseAuthException catch (e) {
       if (e.code == 'user-not-found') {
@@ -130,7 +141,13 @@ class Authentication {
 
   bool isUserLoggedIn() => _firebaseAuth.currentUser != null;
 
-  bool isEmailVerified() => _firebaseAuth.currentUser!.emailVerified;
+  bool get isEmailVerified {
+    final user = _firebaseAuth.currentUser;
+    user!.reload();
+    return user.emailVerified;
+  }
+
+  User? get currentUser => _firebaseAuth.currentUser;
 }
 
 class AuthenticationResult {

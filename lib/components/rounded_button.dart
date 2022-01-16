@@ -4,30 +4,26 @@ import 'package:passwordmanager/constants.dart';
 class RoundedButton extends StatelessWidget {
   final String text;
   final Function() onPressed;
-  final Color color, textColor;
+  late final Color color, textColor;
 
-  const RoundedButton({
+  RoundedButton({
     Key? key,
     required this.text,
     required this.onPressed,
-    this.color = purpleMaterialColor,
+    Color? color,
     this.textColor = Colors.white,
-  }) : super(key: key);
+  }) : super(key: key) {
+    this.color = color ?? purpleMaterialColor;
+  }
 
   @override
   Widget build(BuildContext context) {
-    Size size = MediaQuery.of(context).size;
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 10),
-      width: size.width * 0.9,
+      width: MediaQuery.of(context).size.width * 0.9,
       child: ElevatedButton(
         onPressed: onPressed,
-        child: Text(
-          text,
-          style: TextStyle(
-            color: textColor,
-          ),
-        ),
+        child: Text(text, style: TextStyle(color: textColor)),
         style: ElevatedButton.styleFrom(
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(25),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:passwordmanager/screens/change_password.dart';
 import 'package:passwordmanager/screens/generate.dart';
 import 'package:passwordmanager/screens/home.dart';
 import 'package:passwordmanager/screens/login.dart';
@@ -17,6 +18,8 @@ class RoutesGenerator {
         return MaterialPageRoute(builder: (_) => const Login());
       case '/verifyEmail':
         return MaterialPageRoute(builder: (_) => const VerifyEmail());
+      case '/changePassword':
+        return MaterialPageRoute(builder: (_) => const ChangePassword());
       case '/generate':
         if (args is GenerateType) {
           return MaterialPageRoute(

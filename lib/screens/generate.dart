@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:passwordmanager/components/generators/passphrase_generator.dart';
 import 'package:passwordmanager/components/generators/password_generator.dart';
+import 'package:passwordmanager/utils.dart';
 
 enum GenerateType { password, passphrase }
 
@@ -14,6 +15,7 @@ extension EnumWithStringValue on Enum {
 
 class Generate extends StatefulWidget {
   final GenerateType generateType;
+
   const Generate({Key? key, required this.generateType}) : super(key: key);
 
   @override
@@ -40,7 +42,9 @@ class _GreyBackground extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.grey.shade200,
+        color: Theme.of(context).brightness == Brightness.light
+            ? Colors.grey.shade200
+            : Colors.grey.shade800,
         borderRadius: BorderRadius.circular(25.0),
       ),
       padding: EdgeInsets.symmetric(
@@ -64,20 +68,6 @@ class _GenerateState extends State<Generate>
   late int length;
   String generatedValue = "Generating... ";
 
-  void _copyToClipBoard(String value) {
-    Clipboard.setData(ClipboardData(
-      text: value,
-    )).then((_) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            "password has been copied to your clipboard",
-          ),
-        ),
-      );
-    });
-  }
-
   void _onLengthChange(double value) {
     final newLength = value.toInt();
     if (newLength == length) return;
@@ -88,6 +78,11 @@ class _GenerateState extends State<Generate>
       passwordGenerator.minSpecialChars = min(5, (length / 2 - 1).round());
       passwordGenerator.minNumbers = min(5, (length / 2 - 1).round());
     }
+
+    generateType == GenerateType.password
+        ? passwordGenerator.length = length
+        : passphraseGenerator.wordCount = length;
+    _regenerate();
   }
 
   Future<String> _generate() async {
@@ -124,7 +119,7 @@ class _GenerateState extends State<Generate>
 
     () async {
       final _generated = await _generate();
-      setState(() => generatedValue = _generated);
+      if (mounted) setState(() => generatedValue = _generated);
     }();
 
     length = generateType == GenerateType.password
@@ -201,12 +196,11 @@ class _GenerateState extends State<Generate>
                     style: TextStyle(fontSize: 18.0),
                     textAlign: TextAlign.center,
                   ),
-                  style: ButtonStyle(
-                    shape: MaterialStateProperty.all<RoundedRectangleBorder>(
-                      RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(100.0),
-                      ),
+                  style: ElevatedButton.styleFrom(
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(100.0),
                     ),
+                    primary: Theme.of(context).colorScheme.primary,
                   ),
                 ),
               ),
@@ -312,9 +306,7 @@ class _GenerateState extends State<Generate>
           ),
         ),
 
-        Divider(
-          color: Colors.grey.shade400,
-        ),
+        Divider(color: Colors.grey.shade400),
 
         // All settings components-
         Container(
@@ -324,12 +316,7 @@ class _GenerateState extends State<Generate>
             children: [
               Container(
                 margin: const EdgeInsets.only(bottom: 15.0),
-                child: const Text(
-                  'SETTINGS',
-                  style: TextStyle(
-                    fontSize: 16.0,
-                  ),
-                ),
+                child: const Text('SETTINGS', style: TextStyle(fontSize: 16.0)),
               ),
 
               // Include lower case switch component-
@@ -378,7 +365,7 @@ class _GenerateState extends State<Generate>
     );
   }
 
-  bool canIncrementWordCount() => passphraseGenerator.wordCount < 16;
+  bool canIncrementWordCount() => passphraseGenerator.wordCount < 15;
 
   bool canDecrementWordCount() => passphraseGenerator.wordCount > 3;
 
@@ -439,20 +426,15 @@ class _GenerateState extends State<Generate>
     return Scaffold(
       appBar: AppBar(
         elevation: 0,
+        toolbarHeight: 60,
         backgroundColor: Colors.transparent,
-        title: const Text(
-          'Generate',
-          style: TextStyle(
-            color: Colors.black,
-          ),
-        ),
+        foregroundColor: Theme.of(context).appBarTheme.foregroundColor,
+        title: const Text('Generate'),
+        automaticallyImplyLeading: false,
         actions: [
           IconButton(
             onPressed: _regenerate,
-            icon: const Icon(
-              Icons.autorenew_outlined,
-              color: Colors.black,
-            ),
+            icon: const Icon(Icons.autorenew_outlined),
           )
         ],
       ),
@@ -486,7 +468,10 @@ class _GenerateState extends State<Generate>
                         style: const TextStyle(fontSize: 18.0),
                       ),
                     ),
-                    onTap: () => _copyToClipBoard(generatedValue),
+                    onTap: () => copyToClipboard(
+                        context: context,
+                        data: generatedValue,
+                        name: "Password"),
                   ),
                 ],
               ),
@@ -497,10 +482,13 @@ class _GenerateState extends State<Generate>
                   isExpanded: true,
                   items: const <DropdownMenuItem<GenerateType>>[
                     DropdownMenuItem(
-                        value: GenerateType.password, child: Text("Password")),
+                      value: GenerateType.password,
+                      child: Text("Password"),
+                    ),
                     DropdownMenuItem(
-                        value: GenerateType.passphrase,
-                        child: Text("Passphrase")),
+                      value: GenerateType.passphrase,
+                      child: Text("Passphrase"),
+                    ),
                   ],
                   onChanged: (GenerateType? generateType) {
                     setState(() => this.generateType = generateType!);

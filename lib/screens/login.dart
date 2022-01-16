@@ -1,3 +1,4 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:just_the_tooltip/just_the_tooltip.dart'
@@ -5,6 +6,7 @@ import 'package:just_the_tooltip/just_the_tooltip.dart'
 import 'package:passwordmanager/components/background.dart';
 import 'package:passwordmanager/components/rounded_button.dart';
 import 'package:passwordmanager/components/rounded_textfield.dart';
+import 'package:passwordmanager/constants.dart';
 import 'package:passwordmanager/firebase/authentication.dart';
 import 'package:passwordmanager/utils.dart';
 
@@ -30,13 +32,22 @@ class _LoginState extends State<Login> {
   final _emailErrorController = JustTheController();
   final _passwordErrorController = JustTheController();
 
-  bool _validate() {
-    if (_formKey.currentState!.validate()) {
-      _formKey.currentState!.save();
-      debugPrint(_email);
-      debugPrint(_password);
-      return true;
-    }
+  Future<bool> _validate() async {
+    _formKey.currentState!.validate();
+    if (await Future.delayed(
+      const Duration(milliseconds: 50),
+      () {
+        if (_email.isNotEmpty &&
+            _emailErrorMessage.isEmpty &&
+            _passwordErrorMessage.isEmpty) {
+          debugPrint(_email);
+          debugPrint(_password);
+          _formKey.currentState!.save();
+          return true;
+        }
+        return false;
+      },
+    )) return true;
 
     if (_emailErrorMessage.isNotEmpty) {
       _emailErrorController.showTooltip();
@@ -48,7 +59,7 @@ class _LoginState extends State<Login> {
   }
 
   void _login() async {
-    if (!_validate()) return;
+    if (!await _validate()) return;
     final auth = Authentication();
     final authResult = await auth.signInWithEmailAndPassword(
         email: _email, password: _password);
@@ -58,8 +69,12 @@ class _LoginState extends State<Login> {
           .showSnackBar(SnackBar(content: Text(error)));
     } else {
       await setMasterPassword(_password);
+      Navigator.pushNamedAndRemoveUntil(
+        context,
+        auth.isEmailVerified ? '/home' : '/verifyEmail',
+        (Route<dynamic> route) => false,
+      );
     }
-    Navigator.pushReplacementNamed(context, '/home');
   }
 
   @override
@@ -92,94 +107,105 @@ class _LoginState extends State<Login> {
                 ),
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: 3),
-                  child: Column(
-                    children: [
-                      RoundedTextFormField(
-                        autovalidateMode: AutovalidateMode.onUserInteraction,
-                        keyboardType: TextInputType.emailAddress,
-                        labelText: "Enter email address",
-                        autofillHints: const [AutofillHints.email],
-                        icon: Icons.email_outlined,
-                        tooltipMessage: _emailErrorMessage,
-                        tooltipController: _emailErrorController,
-                        validator: (email) {
-                          WidgetsBinding.instance!.addPostFrameCallback(
-                            (_) => setState(() => _emailErrorMessage =
-                                email!.isNotEmpty
-                                    ? ''
-                                    : 'Email cannot be empty'),
-                          );
-                        },
-                        onChanged: (email) {
-                          if (_emailErrorController.value ==
-                              TooltipStatus.isShowing) {
-                            _emailErrorController.hideTooltip();
-                          }
-                          _email = email!;
-                        },
-                      ),
-                    ],
+                  child: RoundedTextFormField(
+                    autovalidateMode: AutovalidateMode.onUserInteraction,
+                    keyboardType: TextInputType.emailAddress,
+                    labelText: "Enter email address",
+                    autofillHints: const [AutofillHints.email],
+                    icon: Icons.email_outlined,
+                    tooltipMessage: _emailErrorMessage,
+                    tooltipController: _emailErrorController,
+                    validator: (email) {
+                      WidgetsBinding.instance!.addPostFrameCallback(
+                        (_) => setState(
+                          () => _emailErrorMessage =
+                              email!.isEmpty ? 'Email cannot be empty' : '',
+                        ),
+                      );
+                    },
+                    onChanged: (email) {
+                      if (_emailErrorController.value ==
+                          TooltipStatus.isShowing) {
+                        _emailErrorController.hideTooltip();
+                      }
+                      _email = email!;
+                    },
                   ),
                 ),
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: 5.0),
-                  child: Column(
-                    children: [
-                      Focus(
-                        onFocusChange: (hasFocus) =>
-                            setState(() => _isPasswordFocused = hasFocus),
-                        child: RoundedTextFormField(
-                          autovalidateMode: AutovalidateMode.onUserInteraction,
-                          labelText: "Enter password",
-                          icon: Icons.lock_outlined,
-                          tooltipMessage: _passwordErrorMessage,
-                          tooltipController: _passwordErrorController,
-                          obscureText: _isPasswordVisible,
-                          keyboardType: TextInputType.visiblePassword,
-                          autofillHints: const [AutofillHints.password],
-                          suffixIcon: _isPasswordFocused
-                              ? IconButton(
-                                  onPressed: () {
-                                    setState(() => _isPasswordVisible =
-                                        !_isPasswordVisible);
-                                  },
-                                  icon: Icon(
-                                    _isPasswordVisible
-                                        ? Icons.visibility_off_outlined
-                                        : Icons.visibility_outlined,
-                                    size: 20,
-                                  ),
-                                )
-                              : null,
-                          validator: (password) {
-                            WidgetsBinding.instance!.addPostFrameCallback(
-                              (_) => setState(() => _passwordErrorMessage =
-                                  password!.isNotEmpty
-                                      ? ''
-                                      : 'Password cannot be empty'),
-                            );
-                          },
-                          onChanged: (password) {
-                            if (_passwordErrorController.value ==
-                                TooltipStatus.isShowing) {
-                              _passwordErrorController.hideTooltip();
-                            }
-                            _password = password!;
-                          },
-                        ),
-                      ),
-                    ],
+                  child: Focus(
+                    onFocusChange: (hasFocus) =>
+                        setState(() => _isPasswordFocused = hasFocus),
+                    child: RoundedTextFormField(
+                      autovalidateMode: AutovalidateMode.onUserInteraction,
+                      labelText: "Enter password",
+                      icon: Icons.lock_outlined,
+                      tooltipMessage: _passwordErrorMessage,
+                      tooltipController: _passwordErrorController,
+                      obscureText: _isPasswordVisible,
+                      keyboardType: TextInputType.visiblePassword,
+                      autofillHints: const [AutofillHints.password],
+                      suffixIcon: _isPasswordFocused
+                          ? IconButton(
+                              onPressed: () {
+                                setState(() =>
+                                    _isPasswordVisible = !_isPasswordVisible);
+                              },
+                              icon: Icon(
+                                _isPasswordVisible
+                                    ? Icons.visibility_off_outlined
+                                    : Icons.visibility_outlined,
+                                size: 20,
+                              ),
+                            )
+                          : null,
+                      validator: (password) {
+                        WidgetsBinding.instance!.addPostFrameCallback(
+                          (_) => setState(() => _passwordErrorMessage =
+                              password!.isEmpty
+                                  ? 'Password cannot be empty'
+                                  : ''),
+                        );
+                      },
+                      onChanged: (password) {
+                        if (_passwordErrorController.value ==
+                            TooltipStatus.isShowing) {
+                          _passwordErrorController.hideTooltip();
+                        }
+                        _password = password!;
+                      },
+                    ),
                   ),
                 ),
-                RoundedButton(
-                  text: "LOGIN",
-                  onPressed: _login,
-                ),
+                RoundedButton(text: "LOGIN", onPressed: _login),
                 SizedBox(height: size.height * 0.02),
-                const Text(
-                  "Don't have an account? Sign Up",
-                  style: TextStyle(
-                    fontSize: 15,
+                Center(
+                  child: RichText(
+                    text: TextSpan(
+                      style: const TextStyle(fontSize: 16),
+                      children: <TextSpan>[
+                        TextSpan(
+                          text: "Don't have an account? ",
+                          style: TextStyle(
+                              color: Theme.of(context).brightness ==
+                                      Brightness.light
+                                  ? Colors.black
+                                  : Colors.white),
+                        ),
+                        TextSpan(
+                          text: "Sign Up",
+                          style: TextStyle(
+                            color: purpleMaterialColor,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          recognizer: TapGestureRecognizer()
+                            ..onTap = () {
+                              Navigator.pushNamed(context, '/signup');
+                            },
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ],

@@ -1,3 +1,4 @@
+import 'package:flutter/gestures.dart' show TapGestureRecognizer;
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:just_the_tooltip/just_the_tooltip.dart'
@@ -5,70 +6,15 @@ import 'package:just_the_tooltip/just_the_tooltip.dart'
 import 'package:passwordmanager/components/background.dart';
 import 'package:passwordmanager/components/rounded_button.dart';
 import 'package:passwordmanager/components/rounded_textfield.dart';
-import 'package:passwordmanager/constants.dart' show emailRegex, nameRegex;
+import 'package:passwordmanager/constants.dart' show purpleMaterialColor;
 import 'package:passwordmanager/firebase/authentication.dart';
-import 'package:passwordmanager/utils.dart';
+import 'package:passwordmanager/utils.dart' show Validation, setMasterPassword;
 
 class Signup extends StatefulWidget {
   const Signup({Key? key}) : super(key: key);
 
   @override
   _SignupState createState() => _SignupState();
-}
-
-extension Validation on String {
-  String isEmailValid() {
-    if (isEmpty) return "Email cannot be empty";
-
-    if (!RegExp(emailRegex).hasMatch(this)) return "Invalid email";
-
-    return "";
-  }
-
-  String isPasswordValid() {
-    final _errors = [];
-    if (isEmpty) return "Password cannot be empty";
-
-    if (length < 8) {
-      _errors.add(' • minimum 8 characters');
-    }
-    if (!RegExp(r'[a-z]').hasMatch(this)) {
-      _errors.add(' • A lowercase letter');
-    }
-    if (!RegExp(r'[A-Z]').hasMatch(this)) {
-      _errors.add(' • An uppercase letter');
-    }
-    if (!RegExp(r'[!@#\$&*~.-/:`]').hasMatch(this)) {
-      _errors.add(' • A special character');
-    }
-    if (!RegExp(r'\d').hasMatch(this)) {
-      _errors.add(' • A number');
-    }
-
-    if (_errors.isEmpty) return "";
-
-    final _errorMessage = StringBuffer("Password must contain: \n");
-    for (int i = 0; i < _errors.length; ++i) {
-      if (i.isOdd) {
-        _errorMessage.writeln(_errors[i]);
-        continue;
-      }
-
-      _errorMessage.write(_errors[i] + '\t');
-    }
-
-    return _errorMessage.toString().trimRight();
-  }
-
-  String isNameValid() {
-    if (isEmpty) return "Name field is empty";
-
-    if (!RegExp(nameRegex).hasMatch(this)) {
-      return "Invalid name. Use only letters and spaces";
-    }
-
-    return "";
-  }
 }
 
 class _SignupState extends State<Signup> {
@@ -92,19 +38,26 @@ class _SignupState extends State<Signup> {
   final _passwordErrorController = JustTheController();
   final _confirmPasswordErrorController = JustTheController();
 
-  bool _validate() {
-    if (_name.isNotEmpty &&
-        _nameErrorMessage.isEmpty &&
-        _confirmPasswordErrorMessage.isEmpty &&
-        _passwordErrorMessage.isEmpty &&
-        _emailErrorMessage.isEmpty) {
-      debugPrint(_name);
-      debugPrint(_email);
-      debugPrint(_password);
-      debugPrint(_confirmPassword);
-      _formKey.currentState!.save();
-      return true;
-    }
+  Future<bool> _validate() async {
+    _formKey.currentState!.validate();
+    if (await Future.delayed(
+      const Duration(milliseconds: 50),
+      () {
+        if (_name.isNotEmpty &&
+            _nameErrorMessage.isEmpty &&
+            _confirmPasswordErrorMessage.isEmpty &&
+            _passwordErrorMessage.isEmpty &&
+            _emailErrorMessage.isEmpty) {
+          debugPrint(_name);
+          debugPrint(_email);
+          debugPrint(_password);
+          debugPrint(_confirmPassword);
+          _formKey.currentState!.save();
+          return true;
+        }
+        return false;
+      },
+    )) return true;
 
     if (_nameErrorMessage.isNotEmpty) {
       _nameErrorController.showTooltip();
@@ -122,13 +75,14 @@ class _SignupState extends State<Signup> {
   }
 
   void _signup() async {
-    if (!_validate()) return;
+    if (!await _validate()) return;
     final auth = Authentication();
     final error = await auth.addUserWithEmailAndPassword(
-        email: _email,
-        password: _password,
-        collectionPath: 'users',
-        values: {'name': _name});
+      email: _email,
+      password: _password,
+      collectionPath: 'users',
+      values: {'name': _name},
+    );
     if (error != null && error.isNotEmpty) {
       ScaffoldMessenger.of(context)
           .showSnackBar(SnackBar(content: Text(error)));
@@ -174,188 +128,179 @@ class _SignupState extends State<Signup> {
                 // Name
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: 5),
-                  child: Column(
-                    children: [
-                      RoundedTextFormField(
-                        autovalidateMode: AutovalidateMode.onUserInteraction,
-                        keyboardType: TextInputType.name,
-                        labelText: "Enter your name",
-                        autofillHints: const [AutofillHints.name],
-                        icon: Icons.person_outlined,
-                        tooltipMessage: _nameErrorMessage,
-                        tooltipController: _nameErrorController,
-                        validator: (name) {
-                          WidgetsBinding.instance!.addPostFrameCallback(
-                            (_) => setState(
-                                () => _nameErrorMessage = name!.isNameValid()),
-                          );
-                        },
-                        onChanged: (name) {
-                          if (_nameErrorController.value ==
-                              TooltipStatus.isShowing) {
-                            _nameErrorController.hideTooltip();
-                          }
-                          _name = name!;
-                        },
-                      ),
-                    ],
+                  child: RoundedTextFormField(
+                    autovalidateMode: AutovalidateMode.onUserInteraction,
+                    keyboardType: TextInputType.name,
+                    labelText: "Enter your name",
+                    autofillHints: const [AutofillHints.name],
+                    icon: Icons.person_outlined,
+                    tooltipMessage: _nameErrorMessage,
+                    tooltipController: _nameErrorController,
+                    validator: (name) {
+                      WidgetsBinding.instance!.addPostFrameCallback(
+                        (_) => setState(
+                            () => _nameErrorMessage = name!.isNameValid()),
+                      );
+                    },
+                    onChanged: (name) {
+                      if (_nameErrorController.value ==
+                          TooltipStatus.isShowing) {
+                        _nameErrorController.hideTooltip();
+                      }
+                      _name = name!;
+                    },
                   ),
                 ),
 
                 // Email
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: 5),
-                  child: Column(
-                    children: [
-                      RoundedTextFormField(
-                        autovalidateMode: AutovalidateMode.onUserInteraction,
-                        keyboardType: TextInputType.emailAddress,
-                        labelText: "Enter email address",
-                        autofillHints: const [AutofillHints.email],
-                        icon: Icons.email_outlined,
-                        tooltipMessage: _emailErrorMessage,
-                        tooltipController: _emailErrorController,
-                        validator: (email) {
-                          WidgetsBinding.instance!.addPostFrameCallback(
-                            (_) => setState(
-                              () => _emailErrorMessage = email!.isEmailValid(),
-                            ),
-                          );
-                        },
-                        onChanged: (email) {
-                          if (_emailErrorController.value ==
-                              TooltipStatus.isShowing) {
-                            _emailErrorController.hideTooltip();
-                          }
-                          _email = email!;
-                        },
-                      ),
-                    ],
+                  child: RoundedTextFormField(
+                    autovalidateMode: AutovalidateMode.onUserInteraction,
+                    keyboardType: TextInputType.emailAddress,
+                    labelText: "Enter email address",
+                    autofillHints: const [AutofillHints.email],
+                    icon: Icons.email_outlined,
+                    tooltipMessage: _emailErrorMessage,
+                    tooltipController: _emailErrorController,
+                    validator: (email) {
+                      WidgetsBinding.instance!.addPostFrameCallback(
+                        (_) => setState(
+                          () => _emailErrorMessage = email!.isEmailValid(),
+                        ),
+                      );
+                    },
+                    onChanged: (email) {
+                      if (_emailErrorController.value ==
+                          TooltipStatus.isShowing) {
+                        _emailErrorController.hideTooltip();
+                      }
+                      _email = email!;
+                    },
                   ),
                 ),
 
                 // Password
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: 5),
-                  child: Column(
-                    children: [
-                      Focus(
-                        onFocusChange: (hasFocus) =>
-                            setState(() => _isPasswordFocused = hasFocus),
-                        child: RoundedTextFormField(
-                          autovalidateMode: AutovalidateMode.onUserInteraction,
-                          labelText: "Enter password",
-                          icon: Icons.lock_outlined,
-                          obscureText: _isPasswordVisible,
-                          keyboardType: TextInputType.visiblePassword,
-                          autofillHints: const [AutofillHints.password],
-                          suffixIcon: _isPasswordFocused
-                              ? IconButton(
-                                  onPressed: () {
-                                    setState(() => _isPasswordVisible =
-                                        !_isPasswordVisible);
-                                  },
-                                  icon: Icon(
-                                    _isPasswordVisible
-                                        ? Icons.visibility_off_outlined
-                                        : Icons.visibility_outlined,
-                                    size: 20,
-                                  ),
-                                )
-                              : null,
-                          tooltipMessage: _passwordErrorMessage,
-                          tooltipController: _passwordErrorController,
-                          validator: (password) {
-                            WidgetsBinding.instance!.addPostFrameCallback(
-                              (_) => setState(() => _passwordErrorMessage =
-                                  password!.isPasswordValid()),
-                            );
-                          },
-                          onChanged: (password) {
-                            if (_passwordErrorController.value ==
-                                TooltipStatus.isShowing) {
-                              _passwordErrorController.hideTooltip();
-                            }
-                            _password = password!;
-                          },
-                        ),
-                      ),
-                    ],
+                  child: Focus(
+                    onFocusChange: (hasFocus) =>
+                        setState(() => _isPasswordFocused = hasFocus),
+                    child: RoundedTextFormField(
+                      autovalidateMode: AutovalidateMode.onUserInteraction,
+                      labelText: "Enter password",
+                      icon: Icons.lock_outlined,
+                      obscureText: _isPasswordVisible,
+                      keyboardType: TextInputType.visiblePassword,
+                      autofillHints: const [AutofillHints.password],
+                      suffixIcon: _isPasswordFocused
+                          ? IconButton(
+                              onPressed: () {
+                                setState(() =>
+                                    _isPasswordVisible = !_isPasswordVisible);
+                              },
+                              icon: Icon(
+                                _isPasswordVisible
+                                    ? Icons.visibility_off_outlined
+                                    : Icons.visibility_outlined,
+                                size: 20,
+                              ),
+                            )
+                          : null,
+                      tooltipMessage: _passwordErrorMessage,
+                      tooltipController: _passwordErrorController,
+                      validator: (password) {
+                        WidgetsBinding.instance!.addPostFrameCallback(
+                          (_) => setState(() => _passwordErrorMessage =
+                              password!.isPasswordValid()),
+                        );
+                      },
+                      onChanged: (password) {
+                        if (_passwordErrorController.value ==
+                            TooltipStatus.isShowing) {
+                          _passwordErrorController.hideTooltip();
+                        }
+                        _password = password!;
+                      },
+                    ),
                   ),
                 ),
 
                 // Confirm Password
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: 5),
-                  child: Column(
-                    children: [
-                      Focus(
-                        onFocusChange: (hasFocus) {
-                          setState(() => _isConfirmPasswordFocused = hasFocus);
-                        },
-                        child: RoundedTextFormField(
-                          autovalidateMode: AutovalidateMode.onUserInteraction,
-                          labelText: "Confirm your password",
-                          icon: Icons.lock_outlined,
-                          obscureText: _isPasswordVisible,
-                          keyboardType: TextInputType.visiblePassword,
-                          autofillHints: const [AutofillHints.password],
-                          suffixIcon: _isConfirmPasswordFocused
-                              ? IconButton(
-                                  onPressed: () {
-                                    setState(() => _isPasswordVisible =
-                                        !_isPasswordVisible);
-                                  },
-                                  icon: Icon(
-                                    _isPasswordVisible
-                                        ? Icons.visibility_off_outlined
-                                        : Icons.visibility_outlined,
-                                    size: 20,
-                                  ),
-                                )
-                              : null,
-                          tooltipMessage: _confirmPasswordErrorMessage,
-                          tooltipController: _confirmPasswordErrorController,
-                          validator: (confirmPassword) {
-                            WidgetsBinding.instance!.addPostFrameCallback(
-                              (_) {
-                                if (_confirmPassword == _password) return;
-
-                                setState(() => _confirmPasswordErrorMessage =
-                                    confirmPassword!.isEmpty
-                                        ? 'Confirm Password cannot be empty'
-                                        : "Passwords don't match");
+                  child: Focus(
+                    onFocusChange: (hasFocus) {
+                      setState(() => _isConfirmPasswordFocused = hasFocus);
+                    },
+                    child: RoundedTextFormField(
+                      autovalidateMode: AutovalidateMode.onUserInteraction,
+                      labelText: "Confirm your password",
+                      icon: Icons.lock_outlined,
+                      obscureText: _isPasswordVisible,
+                      keyboardType: TextInputType.visiblePassword,
+                      autofillHints: const [AutofillHints.password],
+                      suffixIcon: _isConfirmPasswordFocused
+                          ? IconButton(
+                              onPressed: () {
+                                setState(() =>
+                                    _isPasswordVisible = !_isPasswordVisible);
                               },
-                            );
+                              icon: Icon(
+                                _isPasswordVisible
+                                    ? Icons.visibility_off_outlined
+                                    : Icons.visibility_outlined,
+                                size: 20,
+                              ),
+                            )
+                          : null,
+                      tooltipMessage: _confirmPasswordErrorMessage,
+                      tooltipController: _confirmPasswordErrorController,
+                      validator: (confirmPassword) {
+                        WidgetsBinding.instance!.addPostFrameCallback(
+                          (_) {
+                            setState(() => _confirmPasswordErrorMessage =
+                                confirmPassword!.isEmpty
+                                    ? 'Confirm Password cannot be empty'
+                                    : confirmPassword == _password
+                                        ? ''
+                                        : "Passwords don't match");
                           },
-                          onChanged: (confirmPassword) {
-                            if (_confirmPasswordErrorController.value ==
-                                TooltipStatus.isShowing) {
-                              _confirmPasswordErrorController.hideTooltip();
-                            }
-                            _confirmPassword = confirmPassword!;
-                          },
+                        );
+                      },
+                      onChanged: (confirmPassword) {
+                        if (_confirmPasswordErrorController.value ==
+                            TooltipStatus.isShowing) {
+                          _confirmPasswordErrorController.hideTooltip();
+                        }
+                        _confirmPassword = confirmPassword!;
+                      },
+                    ),
+                  ),
+                ),
+                RoundedButton(text: "SIGN UP", onPressed: _signup),
+                SizedBox(height: size.height * 0.02),
+                Center(
+                  child: RichText(
+                    text: TextSpan(
+                      style: const TextStyle(fontSize: 16),
+                      children: <TextSpan>[
+                        TextSpan(
+                          text: "Already have an account? ",
+                          style: TextStyle(color: Theme.of(context).brightness == Brightness.light ? Colors.black : Colors.white),
                         ),
-                      ),
-                    ],
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 5.0),
-                  child: RoundedButton(
-                    text: "SIGN UP",
-                    onPressed: _signup,
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.only(top: 5.0),
-                  child: GestureDetector(
-                    // onTap: Navigator.of(context).pushReplacementNamed('/login'),
-                    child: const Text(
-                      "Already have an account? Login",
-                      style: TextStyle(
-                        fontSize: 15,
-                      ),
+                        TextSpan(
+                          text: "Login",
+                          style: TextStyle(
+                            color: purpleMaterialColor,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          recognizer: TapGestureRecognizer()
+                            ..onTap = () {
+                              Navigator.pushNamed(context, '/login');
+                            },
+                        ),
+                      ],
                     ),
                   ),
                 ),

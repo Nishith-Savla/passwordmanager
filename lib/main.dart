@@ -13,11 +13,23 @@ void main() async {
   final auth = Authentication();
   runApp(MaterialApp(
     debugShowCheckedModeBanner: false,
-    theme: ThemeData(primarySwatch: purpleMaterialColor),
+    theme: ThemeData(
+        primarySwatch: purpleMaterialColor,
+        appBarTheme: const AppBarTheme(foregroundColor: Colors.black)),
+    darkTheme: ThemeData(
+      brightness: Brightness.dark,
+      inputDecorationTheme: const InputDecorationTheme(
+          labelStyle: TextStyle(color: Colors.white),
+          hintStyle: TextStyle(color: Colors.white),
+          suffixIconColor: Colors.white),
+      textSelectionTheme:
+          const TextSelectionThemeData(cursorColor: Colors.white),
+    ),
+    themeMode: ThemeMode.system,
     initialRoute: auth.isUserLoggedIn()
-        ? auth.isEmailVerified()
+        ? auth.isEmailVerified
             ? "/home"
-            : "/home"
+            : "/verifyEmail"
         : "/login",
     onGenerateRoute: RoutesGenerator.generateRoute,
   ));

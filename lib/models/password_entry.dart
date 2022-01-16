@@ -18,7 +18,7 @@ class PasswordEntry {
       this.referenceId}) {
     uri = Uri.parse(url);
 
-    _iv = iv != null ? IV.fromBase64(iv) : IV.fromLength(16);
+    _iv = iv != null ? IV.fromBase64(iv) : IV.fromSecureRandom(16);
 
     assert(password == null || encryptedPassword == null);
     if (encryptedPassword != null) {
