@@ -447,6 +447,9 @@ class _ItemScreenState extends State<ItemScreen> {
                 setState(() => _isEditable = !_isEditable);
                 if (!_isEditable) _setDefaultValueToTextFields();
               },
+              foregroundColor: Theme.of(context).brightness == Brightness.light
+                  ? Colors.black
+                  : Colors.white,
               child: Icon(_isEditable ? Icons.clear : Icons.edit_outlined),
             ),
     );

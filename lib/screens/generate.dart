@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:passwordmanager/components/generators/passphrase_generator.dart';
 import 'package:passwordmanager/components/generators/password_generator.dart';
+import 'package:passwordmanager/constants.dart';
 import 'package:passwordmanager/utils.dart';
 
 enum GenerateType { password, passphrase }
@@ -180,7 +181,7 @@ class _GenerateState extends State<Generate>
             child: Text(
               title,
               style: const TextStyle(
-                fontSize: 16.0,
+                fontSize: 18.0,
               ),
             ),
           ),
@@ -247,11 +248,13 @@ class _GenerateState extends State<Generate>
           Expanded(
             child: Text(
               title,
-              style: const TextStyle(fontSize: 16.0),
+              style: const TextStyle(fontSize: 18.0),
             ),
           ),
           Switch(
             value: value,
+            activeColor: purpleMaterialColor[200],
+            inactiveThumbColor: purpleMaterialColor[50],
             onChanged: onChanged,
           ),
         ],

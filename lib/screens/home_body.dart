@@ -171,7 +171,7 @@ class _HomeBodyState extends State<HomeBody>
           suffixIcon: isSearching
               ? IconButton(
                   constraints: const BoxConstraints(),
-                  icon: const Icon(Icons.close_outlined),
+                  icon: const Icon(Icons.close_outlined, color: Colors.black),
                   onPressed: () {
                     _controller.clear();
                     setState(() {
@@ -240,6 +240,9 @@ class _HomeBodyState extends State<HomeBody>
       floatingActionButton: FloatingActionButton(
         heroTag: "add",
         backgroundColor: purpleMaterialColor,
+        foregroundColor: Theme.of(context).brightness == Brightness.light
+            ? Colors.black
+            : Colors.white,
         child: const Icon(Icons.add_outlined),
         onPressed: () => Navigator.push(
           context,
