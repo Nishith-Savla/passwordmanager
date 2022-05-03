@@ -10,11 +10,11 @@ class PassphraseGenerator {
     this.wordCount, {
     this.includeNumbers = false,
     this.shouldCapitalize = false,
-    this.separator = "_",
+    this.separator = "-",
     this.wordList = const [],
   });
 
-  int cachedWords = 100;
+  int cachedWords = 10;
   int wordCount;
   bool includeNumbers;
   bool shouldCapitalize;
@@ -24,27 +24,23 @@ class PassphraseGenerator {
 
   Future<bool> fetchWordList() async {
     final response = await http.get(
-        Uri.parse("https://quiterandomapi.p.rapidapi.com/api/randomWord"),
+        Uri.parse(
+            "https://byepass-random-words-api.herokuapp.com/words?limit=$cachedWords"),
         headers: {
-          "count": cachedWords.toString(),
-          "x-rapidapi-key": dotenv.env["X-RAPIDAPI-KEY"]!,
-          "x-rapidapi-host": "quiterandomapi.p.rapidapi.com",
+          "X-API-KEY": dotenv.env["X-API-KEY"]!,
         });
 
     if (response.statusCode != 200) return false;
 
-    wordList = [];
-    for (final word in jsonDecode(response.body)) {
-      if (word.length < 7) continue;
-      wordList.add(word.replaceAll('-', '').replaceAll("'", ""));
-    }
+    wordList = List<String>.from(
+        (jsonDecode(response.body) as Map<String, dynamic>)["words"]);
     return true;
   }
 
   Future<void> keepFetchingWordList() async {
-    for (int i = 0; i < 30; ++i) {
+    for (int i = 0; i < 3; ++i) {
       if (await fetchWordList()) break;
-      sleep(const Duration(seconds: 2));
+      sleep(const Duration(seconds: 1));
     }
   }
 
