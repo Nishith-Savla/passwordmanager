@@ -45,7 +45,9 @@ class _ProfileState extends State<Profile> {
         title: const Text('Profile'),
         elevation: 0,
         backgroundColor: Colors.transparent,
-        foregroundColor: Colors.black,
+        foregroundColor: Theme.of(context).brightness == Brightness.light
+            ? Colors.black
+            : Colors.white,
         actions: [
           _isEditable
               ? IconButton(

@@ -96,12 +96,12 @@ class RoundedTextFormField extends StatelessWidget {
                     onTap: tooltipController!.showTooltip,
                   ),
                 )
-              : Icon(icon, size: 22, color: Theme.of(context).iconTheme.color),
+              : Icon(icon, size: 22, color: Colors.black),
           hintText: hintText,
-          hintStyle: Theme.of(context).inputDecorationTheme.hintStyle,
+          hintStyle: const TextStyle(color: Colors.black),
           suffixIcon: suffixIcon,
           labelText: labelText,
-          labelStyle: Theme.of(context).inputDecorationTheme.labelStyle,
+          labelStyle: const TextStyle(color: Colors.black),
           border: InputBorder.none,
         ),
         focusNode: focusNode,
@@ -112,7 +112,10 @@ class RoundedTextFormField extends StatelessWidget {
         onChanged: onChanged,
         onSaved: onSaved,
         readOnly: disabled,
-        style: style,
+        style: style?.copyWith(color: Colors.black) ??
+            const TextStyle(
+              color: Colors.black,
+            ),
         validator: validator,
       ),
     );

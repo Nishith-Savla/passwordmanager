@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:passwordmanager/components/generators/passphrase_generator.dart';
 import 'package:passwordmanager/components/generators/password_generator.dart';
+import 'package:passwordmanager/constants.dart';
 import 'package:passwordmanager/utils.dart';
 
 enum GenerateType { password, passphrase }
@@ -67,6 +68,7 @@ class _GenerateState extends State<Generate>
   late final PasswordGenerator passwordGenerator;
   late int length;
   String generatedValue = "Generating... ";
+  final separatorController = TextEditingController(text: "-");
 
   void _onLengthChange(double value) {
     final newLength = value.toInt();
@@ -125,6 +127,14 @@ class _GenerateState extends State<Generate>
     length = generateType == GenerateType.password
         ? passwordGenerator.length
         : passphraseGenerator.wordCount;
+
+    separatorController.addListener(() {
+      final text = separatorController.text;
+      if (text.isNotEmpty) {
+        passphraseGenerator.separator = separatorController.text;
+        _regenerate();
+      }
+    });
   }
 
   bool canDecrementSpecialChar() => passwordGenerator.minSpecialChars > 0;
@@ -180,7 +190,7 @@ class _GenerateState extends State<Generate>
             child: Text(
               title,
               style: const TextStyle(
-                fontSize: 16.0,
+                fontSize: 18.0,
               ),
             ),
           ),
@@ -247,11 +257,13 @@ class _GenerateState extends State<Generate>
           Expanded(
             child: Text(
               title,
-              style: const TextStyle(fontSize: 16.0),
+              style: const TextStyle(fontSize: 18.0),
             ),
           ),
           Switch(
             value: value,
+            activeColor: purpleMaterialColor[200],
+            inactiveThumbColor: purpleMaterialColor[50],
             onChanged: onChanged,
           ),
         ],
@@ -392,6 +404,40 @@ class _GenerateState extends State<Generate>
             ),
           ),
         ),
+        _GreyBackground(
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Expanded(
+                child: Text(
+                  "Separator",
+                  style: TextStyle(fontSize: 18.0),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.only(right: 20.0),
+                child: SizedBox(
+                  width: 20,
+                  child: TextField(
+                    style: const TextStyle(fontSize: 40),
+                    controller: separatorController,
+                    maxLength: 1,
+                    inputFormatters: <TextInputFormatter>[
+                      FilteringTextInputFormatter.allow(
+                          RegExp("[\\-_@#\\\$!%^&*()+=><?,\\.]")),
+                    ],
+                    decoration: const InputDecoration(
+                      contentPadding: EdgeInsets.zero,
+                      counterText: "",
+                      isDense: true,
+                      enabledBorder: InputBorder.none,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
         _renderNumericRow(
           title: 'Word Count',
           number: passphraseGenerator.wordCount.toString(),
@@ -505,6 +551,12 @@ class _GenerateState extends State<Generate>
         ),
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    separatorController.dispose();
+    super.dispose();
   }
 
   @override

@@ -13,17 +13,18 @@ void main() async {
   final auth = Authentication();
   runApp(MaterialApp(
     debugShowCheckedModeBanner: false,
-    theme: ThemeData(
-        primarySwatch: purpleMaterialColor,
-        appBarTheme: const AppBarTheme(foregroundColor: Colors.black)),
+    // theme: ThemeData(
+    //     primarySwatch: purpleMaterialColor,
+    //     inputDecorationTheme: const InputDecorationTheme(
+    //       labelStyle: TextStyle(color: Colors.black),
+    //       hintStyle: TextStyle(color: Colors.black),
+    //     ),
+    //     appBarTheme: const AppBarTheme(foregroundColor: Colors.black)),
     darkTheme: ThemeData(
       brightness: Brightness.dark,
-      inputDecorationTheme: const InputDecorationTheme(
-          labelStyle: TextStyle(color: Colors.white),
-          hintStyle: TextStyle(color: Colors.white),
-          suffixIconColor: Colors.white),
-      textSelectionTheme:
-          const TextSelectionThemeData(cursorColor: Colors.white),
+      colorScheme:
+          const ColorScheme.dark().copyWith(secondary: purpleMaterialColor),
+      // switchTheme: SwitchThemeData(overlayColor: purpleMaterialColor),
     ),
     themeMode: ThemeMode.system,
     initialRoute: auth.isUserLoggedIn()
